@@ -13,8 +13,8 @@ contract Token {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance; //owner => (spender => remaining amount)
 
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
     constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _totalSupply) {
         name = _name;
@@ -48,6 +48,7 @@ contract Token {
 
     function _transfer(address _from, address _to, uint256 _value) internal returns (bool success) {
         require(balanceOf[_from] >= _value, 'Insufficient balance.');
+        require(_to != address(0), 'Invalid address');
 
         balanceOf[_from] -= _value;
         balanceOf[_to] += _value;

@@ -25,71 +25,101 @@ describe('Token', () => {
     }
 
     describe('Deploying Token', () => {
-        it('Sets the correct name', async () => {
-            expect(await token.name()).to.be.equal('Community Cash')
+        it('sets the correct name', async () => {
+            expect(await token.name()).to.equal('Community Cash')
         })
 
-        it('Sets the correct symbol', async () => {
-            expect(await token.symbol()).to.be.equal('RENT')
+        it('sets the correct symbol', async () => {
+            expect(await token.symbol()).to.equal('RENT')
         })
 
-        it('Sets the correct decimals', async () => {
-            expect(await token.decimals()).to.be.equal(18)
+        it('sets the correct decimals', async () => {
+            expect(await token.decimals()).to.equal(18)
         })
 
-        it('Sets the correct total supply', async () => {
-            expect(await token.totalSupply()).to.be.equal(totalSupply)
+        it('sets the correct total supply', async () => {
+            expect(await token.totalSupply()).to.equal(totalSupply)
         })
 
-        it('Assigns total supply to the owner.', async () => {
-            expect(await token.balanceOf(owner)).to.be.equal(totalSupply)
+        it('assigns total supply to the owner.', async () => {
+            expect(await token.balanceOf(owner)).to.equal(totalSupply)
         })
     })
 
     describe('Token transfer', () => {
         describe('Success', () => {
-            it('Transfers tokens', async () => {
-                await token.transfer(user1.address, amount)
-                expect(await token.balanceOf(user1.address)).to.be.equal(amount)
-                expect(await token.balanceOf(owner)).to.be.equal(totalSupply.sub(amount))
+            let transaction, result
+    
+            beforeEach(async () => {
+                transaction = await token.transfer(user1.address, amount)
+                result = await transaction.wait()
             })
 
-            it('Emits a transfer event', async () => {
-                await expect(token.transfer(user1.address, amount)).to.emit(token, 'Transfer')
+            it('transfers tokens', async () => {
+                expect(await token.balanceOf(user1.address)).to.equal(amount)
+                expect(await token.balanceOf(owner)).to.equal(totalSupply.sub(amount))
+            })
+
+            it('emits a transfer event', async () => {                
+                //await expect(token.transfer(user1.address, amount)).to.emit(token, 'Transfer')
+                const event = result.events[0]
+                expect(event.event).to.equal('Transfer')
+
+                const args = event.args
+                expect(args.from).to.equal(owner)
+                expect(args.to).to.equal(user1.address)
+                expect(args.value).to.equal(amount)
             })
         })
 
         describe('Failure', () => {
-            it('Rejects insufficient balances', async () => {
-                await expect(token.transfer(user1.address, totalSupply + amount)).to.be.rejected
+            it('rejects insufficient balances', async () => {
+                await expect(token.transfer(user1.address, totalSupply.add(amount))).to.be.reverted
+            })
+
+            it('rejects invalid addresses', async () => {
+                await expect(token.transfer('0x0000000000000000000000000000000000000000', amount)).to.be.reverted
             })
         })
     })
 
     describe('Approving tokens for delegation', () => {
-        it('Approves token delegation', async () => {
-            await token.approve(user1.address, amount)
-            expect(await token.allowance(owner, user1.address)).to.be.equal(amount)
+        let transaction, result
+
+        beforeEach(async () => {
+            transaction = await token.approve(user1.address, amount)
+            result = await transaction.wait()
         })
 
-        it('Emits an approval event', async () => {
-            await expect(token.approve(user1.address, amount)).to.emit(token, 'Approval')
+        it('approves token delegation', async () => {
+            expect(await token.allowance(owner, user1.address)).to.equal(amount)
+        })
+
+        it('emits an approval event', async () => {
+            //await expect(token.approve(user1.address, amount)).to.emit(token, 'Approval')
+            const event = result.events[0]
+            expect(event.event).to.equal('Approval')
+            
+            const args = event.args
+            expect(args.owner).to.equal(owner)
+            expect(args.spender).to.equal(user1.address)
+            expect(args.value).to.equal(amount)
         })
     })
 
     describe('Delegated token transfers', () => {
         describe('Success', () => {
-            it('Transfers delegated tokens', async () => {
+            it('transfers delegated tokens', async () => {
                 await token.approve(user1.address, amount)
                 await token.connect(user1).transferFrom(owner, user2, amount)
-                expect(await token.balanceOf(user2)).to.be.equal(amount)
-                expect(await token.allowance(owner, user1.address)).to.be.equal(0)
+                expect(await token.balanceOf(user2)).to.equal(amount)
+                expect(await token.allowance(owner, user1.address)).to.equal(0)
             })
         })
 
         describe('Failure', () => {
-            it('Rejects insufficient allowances', async () => {
-                await expect(token.transferFrom(user1.address, user2, amount)).to.be.rejected
+            it('rejects insufficient allowances', async () => {
+                await expect(token.transferFrom(user1.address, user2, amount)).to.be.reverted
             })
         })
     })
