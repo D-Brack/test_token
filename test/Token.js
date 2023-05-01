@@ -16,6 +16,8 @@ describe('Token', () => {
         owner = accounts[0].address
         user1 = accounts[1]
         user2 = accounts[2].address
+
+        totalSupply = tokens(totalSupply)
     })
 
     const tokens = (_value) => {
@@ -36,11 +38,11 @@ describe('Token', () => {
         })
 
         it('Sets the correct total supply', async () => {
-            expect(await token.totalSupply()).to.be.equal(tokens(totalSupply))
+            expect(await token.totalSupply()).to.be.equal(totalSupply)
         })
 
         it('Assigns total supply to the owner.', async () => {
-            expect(await token.balanceOf(owner)).to.be.equal(tokens(totalSupply))
+            expect(await token.balanceOf(owner)).to.be.equal(totalSupply)
         })
     })
 
@@ -49,7 +51,7 @@ describe('Token', () => {
             it('Transfers tokens', async () => {
                 await token.transfer(user1.address, amount)
                 expect(await token.balanceOf(user1.address)).to.be.equal(amount)
-                expect(await token.balanceOf(owner)).to.be.equal(tokens(totalSupply).sub(amount))
+                expect(await token.balanceOf(owner)).to.be.equal(totalSupply.sub(amount))
             })
 
             it('Emits a transfer event', async () => {
