@@ -20,8 +20,9 @@ contract Token {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        totalSupply = _totalSupply;
+        totalSupply = _totalSupply * (10 ** decimals);
 
+        owner = msg.sender;
         balanceOf[owner] = totalSupply;
     }
 
@@ -32,6 +33,9 @@ contract Token {
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
         _transfer(_from, _to, _value);
+
+        allowance[_from][msg.sender] -= _value;
+
         return true;
     }
 
