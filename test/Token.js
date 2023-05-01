@@ -77,7 +77,7 @@ describe('Token', () => {
                 await expect(token.transfer(user1.address, totalSupply.add(amount))).to.be.reverted
             })
 
-            it('rejects invalid addresses', async () => {
+            it('rejects invalid recipients', async () => {
                 await expect(token.transfer('0x0000000000000000000000000000000000000000', amount)).to.be.reverted
             })
         })
@@ -91,19 +91,27 @@ describe('Token', () => {
             result = await transaction.wait()
         })
 
-        it('approves token delegation', async () => {
-            expect(await token.allowance(owner, user1.address)).to.equal(amount)
+        describe('Success', () => {
+            it('allocates an allowance token delegation', async () => {
+                expect(await token.allowance(owner, user1.address)).to.equal(amount)
+            })
+    
+            it('emits an approval event', async () => {
+                //await expect(token.approve(user1.address, amount)).to.emit(token, 'Approval')
+                const event = result.events[0]
+                expect(event.event).to.equal('Approval')
+                
+                const args = event.args
+                expect(args.owner).to.equal(owner)
+                expect(args.spender).to.equal(user1.address)
+                expect(args.value).to.equal(amount)
+            })
         })
 
-        it('emits an approval event', async () => {
-            //await expect(token.approve(user1.address, amount)).to.emit(token, 'Approval')
-            const event = result.events[0]
-            expect(event.event).to.equal('Approval')
-            
-            const args = event.args
-            expect(args.owner).to.equal(owner)
-            expect(args.spender).to.equal(user1.address)
-            expect(args.value).to.equal(amount)
+        describe('Failure', () => {
+            it('rejects invalid spenders', async () => {
+                await expect(token.transfer('0x0000000000000000000000000000000000000000', amount)).to.be.reverted
+            })
         })
     })
 
