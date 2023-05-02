@@ -83,7 +83,7 @@ describe('Token', () => {
         })
     })
 
-    describe('Approving tokens for delegation', () => {
+    describe('Approving tokens for allowance', () => {
         let transaction, result
 
         beforeEach(async () => {
@@ -116,18 +116,51 @@ describe('Token', () => {
     })
 
     describe('Delegated token transfers', () => {
+        let transaction, result
+
+        beforeEach(async () => {
+            transaction = await token.approve(user1.address, totalSupply.add(amount))
+            result = await transaction.wait()
+        })
+
         describe('Success', () => {
+            beforeEach(async () => {
+                transaction = await token.connect(user1).transferFrom(owner, user2, amount)
+                result = await transaction.wait()
+            })
+
             it('transfers delegated tokens', async () => {
-                await token.approve(user1.address, amount)
-                await token.connect(user1).transferFrom(owner, user2, amount)
                 expect(await token.balanceOf(user2)).to.equal(amount)
-                expect(await token.allowance(owner, user1.address)).to.equal(0)
+                expect(await token.balanceOf(owner)).to.equal(totalSupply.sub(amount))
+            })
+
+            it('resets allowance', async () => {
+                expect(await token.allowance(owner, user1.address)).to.equal(totalSupply)
+            })
+
+            it('emits a transfer event', async () => {
+                const event = result.events[0]
+                expect(event.event).to.equal('Transfer')
+
+                const args = event.args
+                expect(args.to).to.equal(user2)
+                expect(args.from).to.equal(owner)
+                expect(args.value).to.equal(amount)
             })
         })
 
         describe('Failure', () => {
+            it('rejects insufficient balances', async () => {
+                await expect(token.transferFrom(owner, user2, totalSupply.add(amount))).to.be.reverted
+            })
+
             it('rejects insufficient allowances', async () => {
                 await expect(token.transferFrom(user1.address, user2, amount)).to.be.reverted
+            })
+
+            it('rejects invalid token owner\'s and spender\'s addresses', async () => {
+                await (expect(token.transferFrom(user1.address, '0x0000000000000000000000000000000000000000', amount)))
+                await (expect(token.transferFrom('0x0000000000000000000000000000000000000000', user2, amount)))
             })
         })
     })
